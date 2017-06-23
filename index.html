@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <title>A sweet reward</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/7.0.0/normalize.min.css">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="d3/lib/colorbrewer/colorbrewer.css">
+</head>
+<body>
+<script type="text/javascript" src="d3/d3.min.js"></script>
+<script type="text/javascript" src="d3/lib/colorbrewer/colorbrewer.js"></script>
+<script src="http://labratrevenge.com/d3-tip/javascripts/d3.tip.v0.6.3.js"></script>
+  <header>
+    <h1>A sweet reward.</h1>
+    <h2>You totally earned it!</h2>
+    <p>Run ran hard, you ran fast, you ran a lot. You burned a lot of calories, too. And you earned an ice cream!</p>
+    <p>This is a promotion in partnership with your GPS watch and "21 Flavors" in Moose road, Concord, MA.</p>
+    <p>Come to "21 Flavors" and show us the result of your run. We will make our best to reproduce this ice cream...</p>
+    <p>And of course, it's on us! You totally earned it!</p>
+  </header>
+
+<script>
+  d3.json("data/run.geojson", function(e, data) {
+    if (e) {
+      console.log(e);
+    } else {
+      console.log("the data was successfully loaded");
+    }
+
+ var runData;
+
+ var hasContent = function (obj) {
+  for(var i = 0; i < data.features.length; i++) {
+    if(data.features[i].properties.runData) {
+      runData = data.features[i].properties.runData;
+      return runData;
+     } else {
+      console.log("empty object");
+    }
+  };
+};
+
+hasContent(data.features);
+
+  var maxIncline = runData.maxIncline,
+      distance = parseFloat(runData.distance.toFixed(1)),
+      calories = runData.calories/100,
+      avg_pace = runData.avgPace;
+
+
+  // d3
+  var dataset = [{ "cx": 20, "cy": 55, "radius": 20, "color" : "#FFC2E0", "key": "distance: km", "value" : distance, "id": "distance" },
+                { "cx": 40, "cy": 0, "radius": 20, "color" : "#f00", "key": "average pace: km/min", "value": avg_pace, "id": "avgPage" },
+                { "cx": 90, "cy": 20, "radius": 20, "color" : "#F96", "key": "max incline: m", "value": maxIncline, "id": "maxIncline" },
+                { "cx": 85, "cy": 80, "radius": 0, "color" : "#93c572", "key": "calories burned", "value": calories, "id": "calories" }
+                ];
+
+  var cone = [{"x": 240, "y": 140, "type": "polygon", "color": "#c60", "points": "100,100 150,260 200,100" }];
+
+  var w = 600;
+  var h = 800;
+
+  var svgContainer = d3.select("body").append("svg")
+    .attr("width", w)
+    .attr("height", h)
+    .attr("viewBox", "60 -80 120 420")
+    .attr("class", "svgView, PiYG");
+
+  var baseCone = svgContainer.selectAll("polygon")
+    .data(cone)
+    .enter()
+    .append("polygon");
+
+  var coneAttributes = baseCone.attr("points", function(d) {return d.points; })
+    .attr("x", function (d) { return d.x; })
+    .attr("y", function (d) { return d.y; })
+    .style("fill", function(d) {return d.color; })
+
+  var circles = svgContainer.selectAll("circle")
+    .data(dataset)
+    .enter()
+    .append("circle");
+
+  var scale = d3.scale.linear()
+    .domain([0.1, 10])
+    .range([0, 100])
+    .nice();
+
+  var ordinalScale = d3.scale.ordinal()
+    .range(colorbrewer.PiYG[4]);
+
+  var tip = d3.tip()
+    .attr("class", "d3-tip")
+    .html(function(d) {
+      if(d.key == "calories burned") {
+        d.value = runData.calories;
+      }
+      return "Flavor <br />" + d.key + "<br /> " + d.value;
+    });
+
+  var circleAttributes = circles.attr("cx", function (d) { return d.cx + 100; })
+    .attr("cy", function (d) { return d.cy; })
+    .attr("r", function (d) { return scale(d.value); })
+    .style("fill", function (d) { return ordinalScale(d.color); })
+    .attr("id", function(d) { return d.id; })
+    .on('mouseover', tip.show)
+    .on('mouseout', tip.hide);
+
+  svgContainer.call(tip);
+
+});
+</script>
+
+</body>
+</html>
